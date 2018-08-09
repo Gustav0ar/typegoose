@@ -43,7 +43,7 @@ export abstract class PersistentModel extends tg.Typegoose {
 
 export class Person extends PersistentModel {
     // add new property
-    @tg.prop({ required: true, validate: /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/ })
+    @tg.prop({ required: true })
     email: string;
 
     // override instanceMethod

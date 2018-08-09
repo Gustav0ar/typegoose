@@ -10,17 +10,10 @@ export type Func = (...args: any[]) => any;
 
 export type RequiredType = boolean | [boolean, string] | string | Func | [Func, string];
 
-export type ValidatorFunction = (value: any) => boolean | Promise<boolean>;
-export type Validator = ValidatorFunction | RegExp | {
-    validator: ValidatorFunction,
-    message?: string,
-};
-
 export interface BasePropOptions {
   required?: RequiredType;
   enum?: string[] | object;
   default?: any;
-  validate?: Validator | Validator[];
   unique?: boolean;
   index?: boolean;
   sparse?: boolean;
@@ -92,7 +85,15 @@ const baseProp = (rawOptions, Type, target, key, isArray = false) => {
   }
 
   const ref = rawOptions.ref;
-  if (ref) {
+
+  if (typeof ref === 'string') {
+    schema[name][key] = {
+      ...schema[name][key],
+      type: mongoose.Schema.Types.ObjectId,
+      ref: ref,
+    };
+    return;
+  } else if (ref) {
     schema[name][key] = {
       ...schema[name][key],
       type: mongoose.Schema.Types.ObjectId,
