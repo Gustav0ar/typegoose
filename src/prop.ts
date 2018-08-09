@@ -23,6 +23,7 @@ export interface BasePropOptions {
 
 export interface PropOptions extends BasePropOptions {
   ref?: any;
+  refType?: 'number' | 'string' | 'Buffer' | 'ObjectID';
 }
 
 export interface ValidateNumberOptions {
@@ -31,9 +32,13 @@ export interface ValidateNumberOptions {
 }
 
 export interface ValidateStringOptions {
+  lowercase?: boolean;
+  uppercase?: boolean;
+  trim?: boolean;
+  match?: RegExp | [RegExp, string];
+  enum?: string[];
   minlength?: number | [number, string];
   maxlength?: number | [number, string];
-  match?: RegExp | [RegExp, string];
 }
 
 export type PropOptionsWithNumberValidate = PropOptions & ValidateNumberOptions;
@@ -41,7 +46,15 @@ export type PropOptionsWithStringValidate = PropOptions & ValidateStringOptions;
 export type PropOptionsWithValidate = PropOptionsWithNumberValidate | PropOptionsWithStringValidate;
 
 const isWithStringValidate = (options: PropOptionsWithStringValidate) =>
-  (options.minlength || options.maxlength || options.match);
+(
+  options.lowercase
+  || options.uppercase
+  || options.trim
+  || options.match
+  || options.enum
+  || options.minlength
+  || options.maxlength
+);
 
 const isWithNumberValidate = (options: PropOptionsWithNumberValidate) =>
   (options.min || options.max);
@@ -84,20 +97,29 @@ const baseProp = (rawOptions, Type, target, key, isArray = false) => {
     initAsObject(name, key);
   }
 
-  const ref = rawOptions.ref;
 
-  if (typeof ref === 'string') {
+  const ref = rawOptions.ref;
+  let refType;
+   switch (rawOptions.refType) {
+    case 'number':
+      refType = mongoose.Schema.Types.Number;
+      break;
+    case 'string':
+      refType = mongoose.Schema.Types.String;
+      break;
+    case 'buffer':
+      refType = mongoose.Schema.Types.Buffer;
+      break;
+    default:
+      refType = mongoose.Schema.Types.ObjectId;
+      break;
+  }
+
+  if (ref) {
     schema[name][key] = {
       ...schema[name][key],
-      type: mongoose.Schema.Types.ObjectId,
-      ref: ref,
-    };
-    return;
-  } else if (ref) {
-    schema[name][key] = {
-      ...schema[name][key],
-      type: mongoose.Schema.Types.ObjectId,
-      ref: ref.name,
+      type: typeof ref === 'string' ? mongoose.Schema.Types.ObjectId : refType,
+      ref: typeof ref === 'string' ? ref : ref.name,
     };
     return;
   }
@@ -106,7 +128,7 @@ const baseProp = (rawOptions, Type, target, key, isArray = false) => {
   if (itemsRef) {
     schema[name][key][0] = {
       ...schema[name][key][0],
-      type: mongoose.Schema.Types.ObjectId,
+      type: refType,
       ref: itemsRef.name,
     };
     return;
@@ -203,4 +225,5 @@ export const arrayProp = (options: ArrayPropOptions) => (target: any, key: strin
   baseProp(options, Type, target, key, true);
 };
 
-export type Ref<T> = T | ObjectID;
+export type RefType = number | string | ObjectID | Buffer;
+export type Ref<R, T extends RefType = ObjectID> = R | T;

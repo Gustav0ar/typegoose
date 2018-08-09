@@ -77,10 +77,18 @@ export class Typegoose {
       sch.statics = sch.statics || {};
     }
 
+    const initMethods = methods.initMethods[name];
     const instanceMethods = methods.instanceMethods[name];
-    if (instanceMethods) {
+    if (instanceMethods && initMethods) {
+      Object.getOwnPropertyNames(initMethods).forEach((key) => sch.queue(key, []));
       sch.methods = Object.assign(instanceMethods, sch.methods || {});
-    } else {
+      sch.methods = Object.assign(initMethods, sch.methods || {}); 
+    } else if (instanceMethods) {
+      sch.methods = Object.assign(instanceMethods, sch.methods || {});
+    } else if (initMethods) {
+      Object.getOwnPropertyNames(initMethods).forEach((key) => sch.queue(key, []));
+      sch.methods = Object.assign(initMethods, sch.methods || {});
+     } else {
       sch.methods = sch.methods || {};
     }
 
